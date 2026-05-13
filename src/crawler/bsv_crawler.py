@@ -74,22 +74,21 @@ class BSVCrawler(BaseCrawler):
 
         tmp_dir = Path("data") / "tmp" / "downloads"
         tmp_dir.mkdir(parents=True, exist_ok=True)
-        filename = Path(urlparse(url).path).name or f"doc_{id(url)}.pdf"
-        tmp_path = tmp_dir / filename
 
-        success = await pw.download_file(url, str(tmp_path), timeout=120000)
-        if not success:
+        downloaded_path = await pw.download_file(url, tmp_dir, timeout=120000)
+        if not downloaded_path:
             logger.warning(f"Download failed: {url}")
             return
 
-        content = Path(tmp_path).read_bytes()
+        content = downloaded_path.read_bytes()
         sha256 = sha256_content(content)
 
         if self.version_manager.exists(sha256):
             logger.info(f"Already existing: {url}")
-            Path(tmp_path).unlink(missing_ok=True)
+            downloaded_path.unlink(missing_ok=True)
             return
 
+        filename = downloaded_path.name
         current_path, archive_path = self.storage.build_path(
             category, subcategory, filename
         )
@@ -97,7 +96,7 @@ class BSVCrawler(BaseCrawler):
         self.storage.save(current_path, content)
         self.storage.save(archive_path, content)
 
-        ext = Path(filename).suffix
+        ext = downloaded_path.suffix
 
         self.version_manager.add(
             title=doc["title"] or filename,
@@ -110,5 +109,5 @@ class BSVCrawler(BaseCrawler):
 
         index_document(current_path, doc["title"] or filename, category, ext)
 
-        Path(tmp_path).unlink(missing_ok=True)
+        downloaded_path.unlink(missing_ok=True)
         logger.info(f"Saved: {filename}")

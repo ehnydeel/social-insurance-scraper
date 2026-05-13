@@ -156,14 +156,13 @@ class FedlexCrawler(BaseCrawler):
             # DOC filestore URLs trigger a browser download, use download_file
             tmp_dir = Path("data") / "tmp" / "downloads"
             tmp_dir.mkdir(parents=True, exist_ok=True)
-            tmp_path = tmp_dir / f"{name}_{ver_date}_{fmt}"
-            success = await pw.download_file(url, str(tmp_path), timeout=60000)
-            if not success:
+            downloaded_path = await pw.download_file(url, tmp_dir, timeout=60000)
+            if not downloaded_path:
                 logger.warning(f"DOC download failed for {name} {ver_date}")
                 return
-            content = Path(tmp_path).read_bytes()
+            content = downloaded_path.read_bytes()
             self._save_file(content, name, ver_date, fmt, url)
-            Path(tmp_path).unlink(missing_ok=True)
+            downloaded_path.unlink(missing_ok=True)
         else:
             content = await pw.fetch_binary(url)
             if not content:

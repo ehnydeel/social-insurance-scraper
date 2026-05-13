@@ -108,8 +108,12 @@ class PlaywrightDownloader:
         finally:
             await page.close()
 
-    async def download_file(self, url: str, target_path: str | Path, timeout: int = 60000) -> bool:
-        """Download a file via the browser context (handles cookies/auth)."""
+    async def download_file(self, url: str, target_dir: str | Path, timeout: int = 60000) -> Path | None:
+        """Download a file via the browser context (handles cookies/auth).
+
+        Returns the path to the saved file, or None on failure.
+        The filename is taken from the server's Content-Disposition header.
+        """
         page = await self._context.new_page()
         try:
             async with page.expect_download(timeout=timeout) as download_info:
@@ -118,13 +122,15 @@ class PlaywrightDownloader:
                 except Exception:
                     pass  # Navigation may be interrupted by download
             download = await download_info.value
-            target = Path(target_path)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            await download.save_as(str(target))
-            return True
+            suggested = download.suggested_filename
+            target_dir = Path(target_dir)
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target_path = target_dir / suggested
+            await download.save_as(str(target_path))
+            return target_path.resolve()
         except Exception as ex:
             logger.error(f"Playwright download failed for {url}: {ex}")
-            return False
+            return None
         finally:
             await page.close()
 

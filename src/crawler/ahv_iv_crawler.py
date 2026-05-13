@@ -1,4 +1,5 @@
 import asyncio
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -16,12 +17,14 @@ IGNORED_DOMAINS = {
     "www.admin.ch",
     "www.edi.admin.ch",
     "www.disclaimer.admin.ch",
-    "sozialversicherungen.admin.ch",
-    "www.sozialversicherungen.admin.ch",
+    "www.bsv.admin.ch",
     "www.youtube.com",
     "www.linkedin.com",
     "abo.news.admin.ch",
 }
+
+# Download URLs from sozialversicherungen.admin.ch platform
+DOWNLOAD_PATH_PATTERN = re.compile(r"^/de/d/\d+/download(\?.*)?$", re.IGNORECASE)
 
 
 class AHVIVCrawler(BaseCrawler):
@@ -40,13 +43,18 @@ class AHVIVCrawler(BaseCrawler):
     async def _run_async(self):
         async with PlaywrightDownloader() as pw:
             sources = CONFIG.get("sources", {}).get("ahv_iv", {})
-            await self._crawl_section(pw, sources.get("wegleitungen", []), "weisungen")
-            await self._crawl_section(pw, sources.get("kreisschreiben", []), "kreisschreiben")
+            for group_key, entries in sources.items():
+                if group_key == "enabled":
+                    continue
+                if not isinstance(entries, list):
+                    continue
+                await self._crawl_section(pw, entries, group_key)
 
-    async def _crawl_section(self, pw: PlaywrightDownloader, entries: list, subcategory: str) -> None:
+    async def _crawl_section(self, pw: PlaywrightDownloader, entries: list, group_key: str) -> None:
         for entry in entries:
             url = entry["url"]
             category = entry.get("category", "ahv_iv")
+            subcategory = entry.get("subcategory", group_key)
 
             html = await pw.fetch_page_html(url, timeout=60000)
             if not html:
@@ -77,22 +85,21 @@ class AHVIVCrawler(BaseCrawler):
 
         tmp_dir = Path("data") / "tmp" / "downloads"
         tmp_dir.mkdir(parents=True, exist_ok=True)
-        filename = Path(urlparse(url).path).name or f"doc_{id(url)}.pdf"
-        tmp_path = tmp_dir / filename
 
-        success = await pw.download_file(url, str(tmp_path), timeout=120000)
-        if not success:
+        downloaded_path = await pw.download_file(url, tmp_dir, timeout=120000)
+        if not downloaded_path:
             logger.warning(f"Download failed: {url}")
             return
 
-        content = Path(tmp_path).read_bytes()
+        content = downloaded_path.read_bytes()
         sha256 = sha256_content(content)
 
         if self.version_manager.exists(sha256):
             logger.info(f"Already existing: {url}")
-            Path(tmp_path).unlink(missing_ok=True)
+            downloaded_path.unlink(missing_ok=True)
             return
 
+        filename = downloaded_path.name
         current_path, archive_path = self.storage.build_path(
             category, subcategory, filename
         )
@@ -100,7 +107,7 @@ class AHVIVCrawler(BaseCrawler):
         self.storage.save(current_path, content)
         self.storage.save(archive_path, content)
 
-        ext = Path(filename).suffix
+        ext = downloaded_path.suffix
 
         self.version_manager.add(
             title=doc["title"] or filename,
@@ -113,5 +120,5 @@ class AHVIVCrawler(BaseCrawler):
 
         index_document(current_path, doc["title"] or filename, category, ext)
 
-        Path(tmp_path).unlink(missing_ok=True)
+        downloaded_path.unlink(missing_ok=True)
         logger.info(f"Saved: {filename}")

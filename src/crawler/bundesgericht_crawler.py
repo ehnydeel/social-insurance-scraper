@@ -99,23 +99,24 @@ class BundesgerichtCrawler(BaseCrawler):
     ) -> None:
         tmp_dir = Path("data") / "tmp" / "downloads"
         tmp_dir.mkdir(parents=True, exist_ok=True)
-        tmp_path = tmp_dir / filename
 
-        success = await pw.download_file(url, str(tmp_path), timeout=120000)
-        if not success:
+        downloaded_path = await pw.download_file(url, tmp_dir, timeout=120000)
+        if not downloaded_path:
             logger.warning(f"Download failed: {url}")
             return
 
-        content = Path(tmp_path).read_bytes()
+        # Use the actual downloaded filename from the server
+        actual_filename = downloaded_path.name
+        content = downloaded_path.read_bytes()
         sha256 = sha256_content(content)
 
         if self.version_manager.exists(sha256):
             logger.info(f"Already existing: {url}")
-            Path(tmp_path).unlink(missing_ok=True)
+            downloaded_path.unlink(missing_ok=True)
             return
 
-        self._save_file(content, CATEGORY, SUBCATEGORY, filename, sha256, url)
-        Path(tmp_path).unlink(missing_ok=True)
+        self._save_file(content, CATEGORY, SUBCATEGORY, actual_filename, sha256, url)
+        downloaded_path.unlink(missing_ok=True)
 
     def _save_file(
         self, content: bytes, category: str, subcategory: str, filename: str,

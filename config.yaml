@@ -58,6 +58,56 @@ sources:
         subcategory: "kreisschreiben"
         url: "https://sozialversicherungen.admin.ch/de/f/5659"
 
+    el:
+      - name: "EL Weisungen"
+        category: "ahv_iv"
+        subcategory: "el"
+        url: "https://sozialversicherungen.admin.ch/de/f/5638"
+      - name: "EL Nachträge"
+        category: "ahv_iv"
+        subcategory: "el"
+        url: "https://sozialversicherungen.admin.ch/de/f/5640"
+
+    eo:
+      - name: "EO Weisungen"
+        category: "ahv_iv"
+        subcategory: "eo"
+        url: "https://sozialversicherungen.admin.ch/de/f/5619"
+
+    bv:
+      - name: "BV Weisungen"
+        category: "ahv_iv"
+        subcategory: "bv"
+        url: "https://sozialversicherungen.admin.ch/de/f/5579"
+      - name: "BV Mitteilungen"
+        category: "ahv_iv"
+        subcategory: "bv"
+        url: "https://sozialversicherungen.admin.ch/de/f/5578"
+
+    famz:
+      - name: "FamZ Weisungen"
+        category: "ahv_iv"
+        subcategory: "famz"
+        url: "https://sozialversicherungen.admin.ch/de/f/5599"
+
+    uel:
+      - name: "ÜL Weisungen"
+        category: "ahv_iv"
+        subcategory: "uel"
+        url: "https://sozialversicherungen.admin.ch/de/f/17490"
+
+    kv:
+      - name: "KV Vollzugsinformationen"
+        category: "ahv_iv"
+        subcategory: "kv"
+        url: "https://sozialversicherungen.admin.ch/de/f/5574"
+
+    uv:
+      - name: "UV Vollzugsinformationen"
+        category: "ahv_iv"
+        subcategory: "uv"
+        url: "https://sozialversicherungen.admin.ch/de/f/5573"
+
   fedlex:
     enabled: true
     sr_gesetze:
