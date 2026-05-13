@@ -1,17 +1,15 @@
-import os
-import time
+import asyncio
+from pathlib import Path
 from urllib.parse import urlparse
 
-import requests
-
 from src.crawler.base_crawler import BaseCrawler
-from src.downloader.file_downloader import HEADERS
+from src.downloader.playwright_downloader import PlaywrightDownloader
 from src.parser.html_parser import HtmlParser
-from src.downloader.file_downloader import FileDownloader
 from src.storage.file_storage import FileStorage
 from src.storage.version_manager import VersionManager
 from src.utils import sha256_content
 from src.config import CONFIG
+from src.indexing.fulltext_index import index_document
 from src.logger import logger
 
 BSV_TARGET_DOMAINS = {
@@ -23,7 +21,6 @@ BSV_TARGET_DOMAINS = {
 class BSVCrawler(BaseCrawler):
     def __init__(self):
         self.parser = HtmlParser()
-        self.downloader = FileDownloader()
         self.storage = FileStorage()
         self.version_manager = VersionManager()
         self.sources = CONFIG.get("sources", {}).get("bsv", {}).get("gesetze", [])
@@ -32,32 +29,37 @@ class BSVCrawler(BaseCrawler):
         if not CONFIG.get("sources", {}).get("bsv", {}).get("enabled", True):
             logger.info("BSV Crawler disabled via config")
             return
+        asyncio.run(self._run_async())
 
-        logger.info("BSV Crawl started.")
+    async def _run_async(self):
+        async with PlaywrightDownloader() as pw:
+            for src in self.sources:
+                category = src.get("category", "bsv")
+                subcategory = src.get("subcategory", "allgemein")
+                url = src["url"]
+                try:
+                    await self._crawl_page(pw, category, subcategory, url)
+                except Exception as ex:
+                    logger.exception(f"Failed to crawl {url}: {ex}")
 
-        for src in self.sources:
-            category = src.get("category", "bsv")
-            subcategory = src.get("subcategory", "allgemein")
-            url = src["url"]
+    async def _crawl_page(
+        self, pw: PlaywrightDownloader, category: str, subcategory: str, url: str
+    ) -> None:
+        html = await pw.fetch_page_html(url, timeout=60000)
+        if not html:
+            logger.warning(f"Empty page for {url}")
+            return
 
+        all_links = self.parser.parse_documents(url, html)
+        documents = [d for d in all_links if self._is_document_url(d["url"])]
+
+        logger.info(f"Found {len(documents)} document(s) on {url}")
+
+        for doc in documents:
             try:
-                response = requests.get(url, headers=HEADERS, timeout=60)
-
-                all_links = self.parser.parse_documents(url, response.text)
-                documents = [
-                    d for d in all_links
-                    if self._is_document_url(d["url"])
-                ]
-
-                for doc in documents:
-                    self.process_document(
-                        category,
-                        subcategory,
-                        doc
-                    )
-                    time.sleep(0.5)
+                await self._process_document(pw, category, subcategory, doc)
             except Exception as ex:
-                logger.exception(ex)
+                logger.warning(f"Failed to download {doc['url']}: {ex}")
 
     @staticmethod
     def _is_document_url(url: str) -> bool:
@@ -65,51 +67,48 @@ class BSVCrawler(BaseCrawler):
         domain = parsed.netloc.lower()
         return domain in BSV_TARGET_DOMAINS
 
-    def process_document(
-            self,
-            category: str,
-            subcategory: str,
-            doc: dict
+    async def _process_document(
+        self, pw: PlaywrightDownloader, category: str, subcategory: str, doc: dict
     ) -> None:
-        content = self.downloader.download(doc["url"])
+        url = doc["url"]
 
-        if not content:
+        tmp_dir = Path("data") / "tmp" / "downloads"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        filename = Path(urlparse(url).path).name or f"doc_{id(url)}.pdf"
+        tmp_path = tmp_dir / filename
+
+        success = await pw.download_file(url, str(tmp_path), timeout=120000)
+        if not success:
+            logger.warning(f"Download failed: {url}")
             return
 
+        content = Path(tmp_path).read_bytes()
         sha256 = sha256_content(content)
 
         if self.version_manager.exists(sha256):
-            logger.info(
-                f"Already existing: {doc['url']}"
-            )
+            logger.info(f"Already existing: {url}")
+            Path(tmp_path).unlink(missing_ok=True)
             return
 
-        filename = os.path.basename(
-            urlparse(doc["url"]).path
-        )
-
-        current_path, archive_path = (
-            self.storage.build_path(
-                category,
-                subcategory,
-                filename
-            )
+        current_path, archive_path = self.storage.build_path(
+            category, subcategory, filename
         )
 
         self.storage.save(current_path, content)
         self.storage.save(archive_path, content)
 
-        ext = os.path.splitext(filename)[1]
+        ext = Path(filename).suffix
 
         self.version_manager.add(
-            title=doc["title"],
+            title=doc["title"] or filename,
             category=category,
             file_format=ext,
             sha256=sha256,
             local_path=current_path,
-            source_url=doc["url"],
+            source_url=url,
         )
 
-        logger.info(
-            f"Saved: {filename}"
-        )
+        index_document(current_path, doc["title"] or filename, category, ext)
+
+        Path(tmp_path).unlink(missing_ok=True)
+        logger.info(f"Saved: {filename}")

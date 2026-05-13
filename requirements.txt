@@ -9,3 +9,5 @@ xmldiff
 pymupdf
 whoosh
 pyyaml
+playwright>=1.40.0
+pytest>=8.0.0
