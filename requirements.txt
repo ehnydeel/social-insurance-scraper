@@ -1,0 +1,11 @@
+requests
+beautifulsoup4
+lxml
+loguru
+sqlalchemy
+apscheduler
+httpx
+xmldiff
+pymupdf
+whoosh
+pyyaml

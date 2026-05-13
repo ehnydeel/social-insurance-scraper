@@ -1,0 +1,88 @@
+storage:
+  base_path: "./data"
+
+database:
+  path: "./data/metadata/documents.db"
+
+scheduler:
+  enabled: true
+  cron: "0 3 * * *"
+
+sources:
+  bsv:
+    enabled: true
+    gesetze:
+      - name: "AHVG"
+        category: "bsv"
+        subcategory: "AHV"
+        url: "https://www.bsv.admin.ch/bsv/de/home/sozialversicherungen/ahv/grundlagen-gesetze.html"
+      - name: "IVG"
+        category: "bsv"
+        subcategory: "IV"
+        url: "https://www.bsv.admin.ch/bsv/de/home/sozialversicherungen/iv/grundlagen-gesetze/gesetze-verordnungen.html"
+      - name: "FamZG"
+        category: "bsv"
+        subcategory: "FamZG"
+        url: "https://www.bsv.admin.ch/de/familienzulagen-gesetze-und-verordnungen"
+
+  ahv_iv:
+    enabled: true
+    wegleitungen:
+      - name: "Weisungen Beiträge"
+        category: "ahv_iv"
+        subcategory: "weisungen"
+        url: "https://sozialversicherungen.admin.ch/de/f/5621"
+      - name: "Weisungen Renten"
+        category: "ahv_iv"
+        subcategory: "weisungen"
+        url: "https://sozialversicherungen.admin.ch/de/f/5622"
+      - name: "Weisungen Aufsicht"
+        category: "ahv_iv"
+        subcategory: "weisungen"
+        url: "https://sozialversicherungen.admin.ch/de/f/5623"
+      - name: "Weisungen Informationssysteme"
+        category: "ahv_iv"
+        subcategory: "weisungen"
+        url: "https://sozialversicherungen.admin.ch/de/f/5625"
+      - name: "Weisungen Regress"
+        category: "ahv_iv"
+        subcategory: "weisungen"
+        url: "https://sozialversicherungen.admin.ch/de/f/5624"
+    kreisschreiben:
+      - name: "Kreisschreiben individuell"
+        category: "ahv_iv"
+        subcategory: "kreisschreiben"
+        url: "https://sozialversicherungen.admin.ch/de/f/5661"
+      - name: "Kreisschreiben kollektiv"
+        category: "ahv_iv"
+        subcategory: "kreisschreiben"
+        url: "https://sozialversicherungen.admin.ch/de/f/5659"
+
+  fedlex:
+    enabled: true
+    sr_gesetze:
+      - name: "ATSG"
+        url: "https://www.fedlex.admin.ch/eli/cc/2002/510/de"
+      - name: "AHVG"
+        url: "https://www.fedlex.admin.ch/eli/cc/63/837_843_843/de"
+      - name: "IVG"
+        url: "https://www.fedlex.admin.ch/eli/cc/1959/827_857_845/de"
+      - name: "AHVV"
+        url: "https://www.fedlex.admin.ch/eli/cc/63/1185_1183_1185/de"
+      - name: "IVV"
+        url: "https://www.fedlex.admin.ch/eli/cc/1961/29_29_29/de"
+      - name: "ATSG"
+        url: "https://www.admin.ch/opc/de/classified-compilation/20152972/index.html"
+      - name: "FamZG"
+        url: "https://www.admin.ch/opc/de/classified-compilation/20042372/index.html"
+      - name: "FamZV"
+        url: "https://www.admin.ch/opc/de/classified-compilation/20072165/index.html"
+      - name: "FLG"
+        url: "https://www.admin.ch/opc/de/classified-compilation/19520136/index.html"
+      - name: "FLV"
+        url: "https://www.admin.ch/opc/de/classified-compilation/19520232/index.html"
+      - name: "AVIG"
+        url: "https://www.admin.ch/opc/de/classified-compilation/20002163/index.html"
+
+  bundesgericht:
+    enabled: true
