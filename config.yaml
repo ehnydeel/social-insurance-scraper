@@ -166,3 +166,11 @@ sources:
     category: "bundesgericht"
     subcategory: "entscheide"
     index_url: "https://entscheidsuche.ch/docs/Index/CH_BGer/last"
+
+  kanton:
+    enabled: false  # Disabled by default, enable when needed
+    # Example configuration for Basel-Land:
+    # - abbreviation: "BL"
+    #   name: "Basel-Landschaft"
+    #   url: "https://bl.clex.ch/app/de/systematic/texts_of_law"
+    # Add more kantons as needed for social security relevant laws

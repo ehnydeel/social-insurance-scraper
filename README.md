@@ -11,15 +11,17 @@ Automatischer Downloader und Historisierer für Schweizer Sozialversicherungsdok
 | **AHV/IV Wegleitungen** (5 Seiten) | PDF-Download | ✅ Working |
 | **AHV/IV Kreisschreiben** (2 Seiten) | PDF-Download | ✅ Working |
 | **Bundesgericht** (entscheidsuche.ch) | JSON, HTML, PDF | ✅ Working |
+| **Kantonale Quellen** | PDF-Download | ⚙️ Konfigurierbar |
 
 ## Architektur
 
 ```
 main.py → run_all()
-   ├── BSVCrawler        → Playwright → HtmlParser → FileStorage + VersionManager
-   ├── FedlexCrawler      → Playwright → SPA Nav   → FileStorage + VersionManager
-   ├── AHVIVCrawler       → Playwright → HtmlParser → FileStorage + VersionManager
-   └── BundesgerichtCrawler → Playwright → entscheidsuche.ch Index API → FileStorage + VersionManager
+    ├── BSVCrawler        → Playwright → HtmlParser → FileStorage + VersionManager
+    ├── FedlexCrawler      → Playwright → SPA Nav   → FileStorage + VersionManager
+    ├── AHVIVCrawler       → Playwright → HtmlParser → FileStorage + VersionManager
+    ├── BundesgerichtCrawler → Playwright → entscheidsuche.ch Index API → FileStorage + VersionManager
+    └── KantonCrawler      → Playwright → HTML Parser → FileStorage + VersionManager
 ```
 
 - Jeder Crawler ist synchron (`run()`), intern via `asyncio.run()`
@@ -49,15 +51,22 @@ data/
 │   └── ahv_iv/
 │       ├── 20260519-ahv_iv-Kreisschreiben individuell.pdf
 │       └── 20260519-ahv_iv-Kreisschreiben kollektiv.pdf
-└── Erläuterungen/
-    ├── ahv_iv/
-    │   ├── 20260519-ahv_iv-EL Weisungen.pdf
-    │   ├── 20260519-ahv_iv-EO Weisungen.pdf
-    │   └── ... (alle Erläuterungen)
-    └── bundesgericht/
-        ├── 20260519-bundesgericht-entscheid.json
-        ├── 20260519-bundesgericht-entscheid.html
-        └── 20260519-bundesgericht-entscheid.pdf
+├── Kanton/
+│   ├── BL/
+│   │   ├── 20260519-bl-gsov.pdf          # Beispiel: Kantonalgesetz über die soziale Vorsorge
+│   │   └── 20260519-bl-famu.pdf          # Beispiel: Familienzulagengesetz
+│   ├── ZH/
+│   │   └── ... (weiteres Kanton BL)
+│   └── ... (alle anderen Kantone)
+├── Erläuterungen/
+│   ├── ahv_iv/
+│   │   ├── 20260519-ahv_iv-EL Weisungen.pdf
+│   │   ├── 20260519-ahv_iv-EO Weisungen.pdf
+│   │   └── ... (alle Erläuterungen)
+│   └── bundesgericht/
+│       ├── 20260519-bundesgericht-entscheid.json
+│       ├── 20260519-bundesgericht-entscheid.html
+│       └── 20260519-bundesgericht-entscheid.pdf
 ├── metadata/
 │   └── documents.db          # SQLite (document_versions Tabelle)
 └── tmp/downloads/            # Temporäre Downloads (wird geleert)
