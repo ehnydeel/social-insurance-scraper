@@ -174,3 +174,22 @@ sources:
     #   name: "Basel-Landschaft"
     #   url: "https://bl.clex.ch/app/de/systematic/texts_of_law"
     # Add more kantons as needed for social security relevant laws
+
+  ak40:
+    enabled: true
+    base_url: "https://www.ak40.ch"
+    versicherungsarten:
+      - name: "Familienzulagen"
+        abbreviation: "FZ"
+      - name: "AHV"
+        abbreviation: "AHV"
+      - name: "IV"
+        abbreviation: "IV"
+      - name: "EO"
+        abbreviation: "EO"
+      - name: "MSE"
+        abbreviation: "MSE"
+      - name: "VSE"
+        abbreviation: "VSE"
+      - name: "EL"
+        abbreviation: "EL"

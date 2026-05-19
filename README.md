@@ -11,6 +11,7 @@ Automatischer Downloader und Historisierer für Schweizer Sozialversicherungsdok
 | **AHV/IV Wegleitungen** (5 Seiten) | PDF-Download | ✅ Working |
 | **AHV/IV Kreisschreiben** (2 Seiten) | PDF-Download | ✅ Working |
 | **Bundesgericht** (entscheidsuche.ch) | JSON, HTML, PDF | ✅ Working |
+| **AK40** (Ausgleichskasse Basel) | PDF-Download | ✅ Working |
 | **Kantonale Quellen** | PDF-Download | ⚙️ Konfigurierbar |
 
 ## Architektur
@@ -21,7 +22,8 @@ main.py → run_all()
     ├── FedlexCrawler      → Playwright → SPA Nav   → FileStorage + VersionManager
     ├── AHVIVCrawler       → Playwright → HtmlParser → FileStorage + VersionManager
     ├── BundesgerichtCrawler → Playwright → entscheidsuche.ch Index API → FileStorage + VersionManager
-    └── KantonCrawler      → Playwright → HTML Parser → FileStorage + VersionManager
+    ├── KantonCrawler      → Playwright → HTML Parser → FileStorage + VersionManager
+    └── AK40Crawler        → Playwright → HTML Parser → FileStorage + VersionManager
 ```
 
 - Jeder Crawler ist synchron (`run()`), intern via `asyncio.run()`
@@ -51,6 +53,28 @@ data/
 │   └── ahv_iv/
 │       ├── 20260519-ahv_iv-Kreisschreiben individuell.pdf
 │       └── 20260519-ahv_iv-Kreisschreiben kollektiv.pdf
+├── AK40/
+│   ├── FZ/
+│   │   ├── 20260519-ak40-fz-anmeldeformular_nichterwerbst.pdf
+│   │   └── ... (alle AK40 Dokumente für Familienzulagen)
+│   ├── AHV/
+│   │   ├── 20260519-ak40-ahv-ahv_rentenanmeldung.pdf
+│   │   └── ... (alle AK40 Dokumente für AHV)
+│   ├── IV/
+│   │   ├── 20260519-ak40-iv-invalidenversicherung_anmeldung.pdf
+│   │   └── ... (alle AK40 Dokumente für IV)
+│   ├── EO/
+│   │   ├── 20260519-ak40-eo-erwerbsersatz_antrag.pdf
+│   │   └── ... (alle AK40 Dokumente für EO)
+│   ├── MSE/
+│   │   ├── 20260519-ak40-mse-mutterschaftsentgelt_anmeldung.pdf
+│   │   └── ... (alle AK40 Dokumente für MSE)
+│   ├── VSE/
+│   │   ├── 20260519-ak40-vse-vaterschaftsentgelt_anmeldung.pdf
+│   │   └── ... (alle AK40 Dokumente für VSE)
+│   └── EL/
+│       ├── 20260519-ak40-el-ergaenzungsleistungen_antrag.pdf
+│       └── ... (alle AK40 Dokumente für EL)
 ├── Kanton/
 │   ├── BL/
 │   │   ├── 20260519-bl-gsov.pdf          # Beispiel: Kantonalgesetz über die soziale Vorsorge
@@ -109,11 +133,18 @@ playwright install
 ## Start
 
 ```bash
-# Einmaliger Crawler-Durchlauf
+# Einmaliger Crawler-Durchlauf (alle Quellen)
 python main.py
 
-# Scheduler (täglicher Durchlauf via APScheduler)
-python -m src.scheduler.scheduler
+# Bestimmte Quellen ausführen
+python main.py -s bsv,fedlex          # Nur BSV und Fedlex
+python main.py --sources ahv_iv,ak40  # Nur AHV/IV und AK40
+
+# Kontinuierlich mit Scheduler ausführen
+python main.py --serve
+
+# Hilfe anzeigen
+python main.py --help
 ```
 
 ## Tests
