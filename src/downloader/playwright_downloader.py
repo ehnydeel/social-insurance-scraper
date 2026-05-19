@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional, Union
 from urllib.parse import urljoin
 
 from playwright.async_api import async_playwright
@@ -38,7 +39,7 @@ class PlaywrightDownloader:
         if self._playwright:
             await self._playwright.stop()
 
-    async def fetch_page_html(self, url: str, timeout: int = 30000) -> str | None:
+    async def fetch_page_html(self, url: str, timeout: int = 30000) -> Optional[str]:
         """Navigate to a URL, wait for SPA render, return full HTML."""
         page = await self._context.new_page()
         try:
@@ -108,7 +109,7 @@ class PlaywrightDownloader:
         finally:
             await page.close()
 
-    async def download_file(self, url: str, target_dir: str | Path, timeout: int = 60000) -> Path | None:
+    async def download_file(self, url: str, target_dir: Union[str, Path], timeout: int = 60000) -> Optional[Path]:
         """Download a file via the browser context (handles cookies/auth).
 
         Returns the path to the saved file, or None on failure.
@@ -134,7 +135,7 @@ class PlaywrightDownloader:
         finally:
             await page.close()
 
-    async def fetch_binary(self, url: str, timeout: int = 30000) -> bytes | None:
+    async def fetch_binary(self, url: str, timeout: int = 30000) -> Optional[bytes]:
         """Fetch binary content (PDF, DOC, etc.) via browser."""
         page = await self._context.new_page()
         try:
@@ -153,7 +154,7 @@ class PlaywrightDownloader:
         self,
         page,
         element,
-        target_path: str | Path,
+        target_path: Union[str, Path],
         timeout: int = 60000,
     ) -> bool:
         """Click an element on a live page and capture the triggered download.
@@ -181,7 +182,7 @@ class PlaywrightDownloader:
             return False
 
     @staticmethod
-    def _detect_format(text: str, href: str) -> str | None:
+    def _detect_format(text: str, href: str) -> Optional[str]:
         combined = (text + " " + href).lower()
         if ".xml" in combined or combined.startswith("xml") or text.strip().upper() == "XML":
             return "xml"

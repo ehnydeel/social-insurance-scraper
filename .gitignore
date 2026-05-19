@@ -6,3 +6,5 @@ data/
 logs/
 .pytest_cache/
 .ruff_cache/
+venv/
+.DS_Store
