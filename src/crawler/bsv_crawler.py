@@ -34,16 +34,18 @@ class BSVCrawler(BaseCrawler):
     async def _run_async(self):
         async with PlaywrightDownloader() as pw:
             for src in self.sources:
+                document_type = src.get("document_type", "Gesetze")
+                source = "bsv"
                 category = src.get("category", "bsv")
                 subcategory = src.get("subcategory", "allgemein")
                 url = src["url"]
                 try:
-                    await self._crawl_page(pw, category, subcategory, url)
+                    await self._crawl_page(pw, document_type, source, category, subcategory, url)
                 except Exception as ex:
                     logger.exception(f"Failed to crawl {url}: {ex}")
 
     async def _crawl_page(
-        self, pw: PlaywrightDownloader, category: str, subcategory: str, url: str
+        self, pw: PlaywrightDownloader, document_type: str, source: str, category: str, subcategory: str, url: str
     ) -> None:
         html = await pw.fetch_page_html(url, timeout=60000)
         if not html:
@@ -57,7 +59,7 @@ class BSVCrawler(BaseCrawler):
 
         for doc in documents:
             try:
-                await self._process_document(pw, category, subcategory, doc)
+                await self._process_document(pw, document_type, source, category, subcategory, doc)
             except Exception as ex:
                 logger.warning(f"Failed to download {doc['url']}: {ex}")
 
@@ -68,7 +70,7 @@ class BSVCrawler(BaseCrawler):
         return domain in BSV_TARGET_DOMAINS
 
     async def _process_document(
-        self, pw: PlaywrightDownloader, category: str, subcategory: str, doc: dict
+        self, pw: PlaywrightDownloader, document_type: str, source: str, category: str, subcategory: str, doc: dict
     ) -> None:
         url = doc["url"]
 
@@ -89,12 +91,9 @@ class BSVCrawler(BaseCrawler):
             return
 
         filename = downloaded_path.name
-        current_path, archive_path = self.storage.build_path(
-            category, subcategory, filename
-        )
+        current_path = self.storage.build_path(document_type, source, filename)
 
         self.storage.save(current_path, content)
-        self.storage.save(archive_path, content)
 
         ext = downloaded_path.suffix
 
@@ -109,5 +108,4 @@ class BSVCrawler(BaseCrawler):
 
         index_document(current_path, doc["title"] or filename, category, ext)
 
-        downloaded_path.unlink(missing_ok=True)
         logger.info(f"Saved: {filename}")

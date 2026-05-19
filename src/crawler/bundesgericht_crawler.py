@@ -14,8 +14,9 @@ from src.logger import logger
 
 INDEX_URL = "https://entscheidsuche.ch/docs/Index/CH_BGer/last"
 DOCS_BASE = "https://entscheidsuche.ch/docs/"
-CATEGORY = "bundesgericht"
-SUBCATEGORY = "entscheide"
+# For Bundesgericht, we map to document_type "Erläuterungen" and source "bundesgericht"
+DOCUMENT_TYPE = "Erläuterungen"
+SOURCE = "bundesgericht"
 
 
 class BundesgerichtCrawler(BaseCrawler):
@@ -78,7 +79,7 @@ class BundesgerichtCrawler(BaseCrawler):
         json_sha = sha256_content(json_bytes)
         if not self.version_manager.exists(json_sha):
             json_filename = f"{base_name}.json"
-            self._save_file(json_bytes, CATEGORY, SUBCATEGORY, json_filename, json_sha, json_url)
+            self._save_file(json_bytes, json_filename, json_sha, json_url)
 
         html_info = meta.get("HTML")
         if html_info and "Datei" in html_info:
@@ -115,18 +116,21 @@ class BundesgerichtCrawler(BaseCrawler):
             downloaded_path.unlink(missing_ok=True)
             return
 
-        self._save_file(content, CATEGORY, SUBCATEGORY, actual_filename, sha256, url)
+        self._save_file(content, actual_filename, sha256, url)
         downloaded_path.unlink(missing_ok=True)
 
     def _save_file(
-        self, content: bytes, category: str, subcategory: str, filename: str,
-        sha256: str, source_url: str
+        self, content: bytes, filename: str, sha256: str, source_url: str
     ) -> None:
         ext = Path(filename).suffix
-        current_path, archive_path = self.storage.build_path(category, subcategory, filename)
+        current_path = self.storage.build_path(DOCUMENT_TYPE, SOURCE, filename)
 
         self.storage.save(current_path, content)
-        self.storage.save(archive_path, content)
+
+        # Note: We still use the original category and subcategory for versioning and indexing
+        # to maintain consistency with existing metadata.
+        category = "bundesgericht"
+        subcategory = "entscheide"
 
         self.version_manager.add(
             title=filename,

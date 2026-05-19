@@ -53,6 +53,7 @@ class AHVIVCrawler(BaseCrawler):
     async def _crawl_section(self, pw: PlaywrightDownloader, entries: list, group_key: str) -> None:
         for entry in entries:
             url = entry["url"]
+            document_type = entry.get("document_type", "Erläuterungen")
             category = entry.get("category", "ahv_iv")
             subcategory = entry.get("subcategory", group_key)
 
@@ -68,7 +69,7 @@ class AHVIVCrawler(BaseCrawler):
 
             for doc in documents:
                 try:
-                    await self._process_document(pw, category, subcategory, doc)
+                    await self._process_document(pw, document_type, category, subcategory, doc)
                 except Exception as ex:
                     logger.warning(f"Failed to download {doc['url']}: {ex}")
 
@@ -79,7 +80,7 @@ class AHVIVCrawler(BaseCrawler):
         return domain not in IGNORED_DOMAINS
 
     async def _process_document(
-        self, pw: PlaywrightDownloader, category: str, subcategory: str, doc: dict
+        self, pw: PlaywrightDownloader, document_type: str, category: str, subcategory: str, doc: dict
     ) -> None:
         url = doc["url"]
 
@@ -100,12 +101,9 @@ class AHVIVCrawler(BaseCrawler):
             return
 
         filename = downloaded_path.name
-        current_path, archive_path = self.storage.build_path(
-            category, subcategory, filename
-        )
+        current_path = self.storage.build_path(document_type, category, filename)
 
         self.storage.save(current_path, content)
-        self.storage.save(archive_path, content)
 
         ext = downloaded_path.suffix
 
@@ -120,5 +118,4 @@ class AHVIVCrawler(BaseCrawler):
 
         index_document(current_path, doc["title"] or filename, category, ext)
 
-        downloaded_path.unlink(missing_ok=True)
         logger.info(f"Saved: {filename}")

@@ -5,16 +5,19 @@ from datetime import datetime
 from src.storage.file_storage import FileStorage
 
 
-def test_build_path_returns_current_and_archive():
+def test_build_path_returns_formatted_path():
     storage = FileStorage()
-    base = Path(tempfile.mkdtemp())
-    category = "test_cat"
-    subcategory = "test_sub"
+    document_type = "Gesetze"
+    source = "bsv"
     filename = "dummy.pdf"
 
-    current, archive = storage.build_path(category, subcategory, filename)
-    assert current is not None
-    assert archive is not None
+    path = storage.build_path(document_type, source, filename)
+    assert path is not None
+    # Normalize path separators for cross-platform compatibility
+    normalized_path = path.replace("\\", "/")
+    assert "data/Gesetze/bsv/" in normalized_path
+    assert "2026" in path  # Contains current year
+    assert "bsv-dummy.pdf" in path or "dummy.pdf" in path
 
 
 def test_save_creates_file():

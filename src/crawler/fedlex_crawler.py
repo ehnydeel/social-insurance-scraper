@@ -226,10 +226,9 @@ class FedlexCrawler(BaseCrawler):
             return
 
         filename = f"{name}_{ver_date}.{fmt}"
-        current_path, archive_path = self.storage.build_path("fedlex", "sr", filename)
+        current_path = self.storage.build_path("Gesetze", "fedlex", filename)
 
         self.storage.save(current_path, content)
-        self.storage.save(archive_path, content)
 
         self.version_manager.add(
             title=f"{name} ({ver_date})",

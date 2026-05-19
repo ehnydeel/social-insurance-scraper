@@ -16,37 +16,48 @@ Automatischer Downloader und Historisierer für Schweizer Sozialversicherungsdok
 
 ```
 main.py → run_all()
-  ├── BSVCrawler        → Playwright → HtmlParser → FileStorage + VersionManager
-  ├── FedlexCrawler      → Playwright → SPA Nav   → FileStorage + VersionManager
-  ├── AHVIVCrawler       → Playwright → HtmlParser → FileStorage + VersionManager
-  └── BundesgerichtCrawler → Playwright → entscheidsuche.ch Index API → FileStorage + VersionManager
+   ├── BSVCrawler        → Playwright → HtmlParser → FileStorage + VersionManager
+   ├── FedlexCrawler      → Playwright → SPA Nav   → FileStorage + VersionManager
+   ├── AHVIVCrawler       → Playwright → HtmlParser → FileStorage + VersionManager
+   └── BundesgerichtCrawler → Playwright → entscheidsuche.ch Index API → FileStorage + VersionManager
 ```
 
 - Jeder Crawler ist synchron (`run()`), intern via `asyncio.run()`
 - `PlaywrightDownloader` als async context manager (ein Browser-Session pro Crawler-Durchlauf)
 - SHA-256 Deduplizierung via `VersionManager` (SQLAlchemy / SQLite)
-- `FileStorage` speichert in `data/<cat>/<sub>/current/` + archiviert nach `data/<cat>/<sub>/archive/YYYY-MM-DD/`
+- `FileStorage` speichert in `data/<document_type>/<source>/<YYYYMMDD>-<source>-<original_filename>.<ext>`
 
 ## Datenhaltung
 
 ```
 data/
-├── bsv/
-│   ├── AHV/current/          # Aktuelle PDFs
-│   ├── AHV/archive/YYYY-MM-DD/
-│   ├── IV/current/
-│   └── FamZG/current/
-├── ahv_iv/
-│   ├── weisungen/current/
-│   ├── weisungen/archive/...
-│   ├── kreisschreiben/current/
-│   └── kreisschreiben/archive/...
-├── fedlex/
-│   ├── sr/current/           # ATSG_AHVG_IVG_..._{datum}.{xml,doc,pdf,html}
-│   └── sr/archive/...
-├── bundesgericht/
-│   ├── entscheide/current/   # CH_BGer_*.{json,html,pdf}
-│   └── entscheide/archive/...
+├── Gesetze/
+│   ├── bsv/
+│   │   ├── 20260519-bsv-AHVG.pdf
+│   │   ├── 20260519-bsv-IVG.xml
+│   │   └── 20260519-bsv-FamZG.pdf
+│   └── fedlex/
+│       ├── 20260519-fedlex-ATSG.{xml,doc,pdf}
+│       ├── 20260519-fedlex-AHVG.{xml,doc,pdf,html}
+│       └── ... (alle SR-Erlasse)
+├── Wegleitungen/
+│   └── ahv_iv/
+│       ├── 20260519-ahv_iv-Weisungen Beiträge.pdf
+│       ├── 20260519-ahv_iv-Weisungen Renten.pdf
+│       └── ... (alle Weisungen)
+├── Kreisschreiben/
+│   └── ahv_iv/
+│       ├── 20260519-ahv_iv-Kreisschreiben individuell.pdf
+│       └── 20260519-ahv_iv-Kreisschreiben kollektiv.pdf
+└── Erläuterungen/
+    ├── ahv_iv/
+    │   ├── 20260519-ahv_iv-EL Weisungen.pdf
+    │   ├── 20260519-ahv_iv-EO Weisungen.pdf
+    │   └── ... (alle Erläuterungen)
+    └── bundesgericht/
+        ├── 20260519-bundesgericht-entscheid.json
+        ├── 20260519-bundesgericht-entscheid.html
+        └── 20260519-bundesgericht-entscheid.pdf
 ├── metadata/
 │   └── documents.db          # SQLite (document_versions Tabelle)
 └── tmp/downloads/            # Temporäre Downloads (wird geleert)
@@ -57,6 +68,7 @@ data/
 `config.yaml` steuert:
 - Aktivierte Quellen (`enabled: true/false`)
 - URLs und Kategorien pro Gesetz/Erlass
+- Dokumententyp-Mapping (Gesetze, Verordnungen, Erläuterungen, Kreisschreiben, Wegleitungen)
 - Scheduler-Cron (default: täglich 03:00)
 - Datenbank-Pfad
 
@@ -69,6 +81,7 @@ sources:
       - name: "AHVG"
         category: "bsv"
         subcategory: "AHV"
+        document_type: "Gesetze"
         url: "https://www.bsv.admin.ch/..."
 ```
 
@@ -79,10 +92,10 @@ sources:
 pip install -r requirements.txt
 
 # Playwright Browser installieren
-playwright install chromium
+playwright install
 ```
 
-**Hinweis:** `playwright` muss nach der Installation der requirements mittels `playwright install chromium` eingerichtet werden.
+**Hinweis:** `playwright` muss nach der Installation der requirements mittels `playwright install` eingerichtet werden.
 
 ## Start
 
